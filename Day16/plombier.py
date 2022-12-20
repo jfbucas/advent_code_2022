@@ -8,12 +8,13 @@ sys.setrecursionlimit(32768)
 
 PART_ONE = False
 PART_TWO = False
-PART_ONE = True
-#PART_TWO = True
+#PART_ONE = True
+PART_TWO = True
 
 f = open("pipes.txt", "r")
+MINI=False
 f = open("minipipes.txt", "r")
-
+MINI=True
 
 valves = {}
 for line in f.readlines():
@@ -27,129 +28,171 @@ for line in f.readlines():
 	valves[name] = {}
 	valves[name]["rate"] = rate
 	valves[name]["tunnels"] = tunnels
-	valves[name]["open"] = False
-	valves[name]["visited"] = False
 
-print(valves)
+#print(valves)
 
-leaves = 0
-def visitation(time, name):
-	global leaves
 
+def visitationPart1(time, name, released):
+	
 	if time <= 0:
+		global leaves, max_released, best_visited, best_open, best_released
+
 		leaves += 1
+		if released > max_released:
+			max_released = released
+			best_visited = list(valves["visited"])
+			best_open = list(valves["open"])
+			best_released = list(valves["released"])
+
+		if leaves % 10000 == 0:
+			print(leaves, max_released, best_visited, best_released)
+
 		return
 
-	#valves[name]["visited"] = True
+	# Heuristic
+	if valves["sum"] < ref_sum[30-time]:
+		return
+	
+	valves["visited"].append(name)
+	valves["released"].append(valves["sum"])
 
+	# Do we consider opening the valve?
+	if (valves[name]["rate"] > 0) and (name not in valves["open"]):
+		current_sum = valves["sum"]
+		valves["open"].append(name)
+		valves["sum"] += valves[name]["rate"]
+		visitationPart1(time-1, name, released+current_sum)
+		valves["sum"] -= valves[name]["rate"]
+		valves["open"].pop()
+
+	# Visit the connected tunnels
 	for t in valves[name]["tunnels"]:
-		#if valves[t]["visited"] == False:
-		more_time = 0
-		if valves[t]["rate"] > 0 and not valves[t]["open"]:
-			valves[t]["open"] = True
-			more_time = 1
-		visitation(time-1-more_time, t)
+		visitationPart1(time-1, t, released+valves["sum"])
 
-	#valves[name]["visited"] = False
+	valves["visited"].pop()
+	valves["released"].pop()
 
-visitation(20, "AA")
+	return
 
-print(leaves)
+def visitationPart2(time, zeroone, name0, name1, released):
 
-exit()
+	if time <= 0:
+		global leaves, max_released, best_visited, best_open, best_released
 
+		leaves += 1
+		if released > max_released:
+			max_released = released
+			best_visited = list(valves["visited"])
+			best_open = list(valves["open"])
+			best_released = list(valves["released"])
 
-lists = list(sensors + beacons)
-minW = min([x for (x,y) in lists ])
-minH = min([y for (x,y) in lists ])
-maxW  = max([x for (x,y) in lists ])
-maxH  = max([y for (x,y) in lists ])
+		if leaves % 50000 == 0:
+			print(leaves, max_released, best_visited, best_released)
 
-print(minW, minH, maxW, maxH)
+		return
 
-W=abs(minW)+abs(maxW)
-H=abs(minH)+abs(maxH)
-
-sparse_lines = [ ]
-for i in range(MAX_Y):
-	sparse_lines.append([])
-
-# Calculate the sparse grid
-for (sx, sy), (bx, by) in zip(sensors, beacons):
-	dx = abs(sx-bx)
-	dy = abs(sy-by)
 	
-	print("Sensor:", sx, ",", sy, "Beacon:", bx, ",", by, "  dx/dy", dx, "/", dy)
+	if zeroone == 1:
+		added = 0
+		for o in valves["open"]:
+			added += valves[o]["rate"]
 
-	x1 = x2 = None
-	starters = None
+		# Heuristic
+		if added < ref_sum[26-time]:
+			return
+		
+		valves["released"].append(added)
+		new_released = released + added
 
-	starters = [ (sx-dx, sy-dy), (sx-dx, sy+dy) ]
-
-	# /.
-	(x,y) = starters[0]
-	while y <= sy:
-		if y>=0 and y<MAX_Y:
-			sparse_lines[ y ].append( (x, sx+sx-x) )
-		y += 1
-		x -= 1
-
-	(x,y) = starters[0]
-	while x <= sx:
-		if y>=0 and y<MAX_Y:
-			sparse_lines[ y ].append( (x, sx+sx-x) )
-		y -= 1
-		x += 1
 	
+	valves["visited"].append(str(zeroone)+":"+name0+"*"+name1)
 
-	# \.
-	(x,y) = starters[1]
-	while y >= sy:
-		if y>=0 and y<MAX_Y:
-			sparse_lines[ y ].append( (x, sx+sx-x) )
-		y -= 1
-		x -= 1
+	# Do we consider opening the valve?
+	if zeroone == 0:
+		if (valves[name0]["rate"] > 0) and (name0 not in valves["open"]):
+			valves["open"].append(name0)
+			visitationPart2(time, 1, name0, name1, released)
+			valves["open"].pop()
+	else:
+		if (valves[name1]["rate"] > 0) and (name1 not in valves["open"]):
+			valves["open"].append(name1)
+			visitationPart2(time-1, 0, name0, name1, new_released)
+			valves["open"].pop()
 
-	(x,y) = starters[1]
-	while x <= sx:
-		if y>=0 and y<MAX_Y:
-			sparse_lines[ y ].append( (x, sx+sx-x) )
-		y += 1
-		x += 1
+	# Visit the connected tunnels
+	if zeroone == 0:
+		for t in valves[name0]["tunnels"]:
+			visitationPart2(time, 1, t, name1, released)
+	else:
+		for t in valves[name1]["tunnels"]:
+			visitationPart2(time-1, 0, name0, t, new_released)
+
+	valves["visited"].pop()
+	if zeroone == 1:
+		valves["released"].pop()
+
+	return
+
+
 
 # Chapter One
 if PART_ONE:
 
-	l2M = [ " " ] * (W*4)
-	for x1, x2 in sparse_lines[ M2 ]:
-		for x in range(x1, x2):
-			l2M[2*W+x] = "#"
+	if MINI:
+		ref_sum = [0, 0, 20, 20, 20, 30, 30, 30, 30, 50, 50, 50, 50, 50, 50, 50, 50, 70, 70, 70, 70, 70, 70, 7, 80, 80, 80, 80, 80, 80]
+	else: 
+		ref_sum = [0, 0, 0, 0, 0, 0, 10, 10, 10, 21, 21, 21, 40, 40, 40, 40, 60, 60, 60, 90, 90, 90, 90, 100, 100, 100, 120, 120, 120, 120, 140, 140, 140, 0]
 
-	print( "Count:", len([ s for s in l2M if s == "#" ]) )
+	valves["sum"] = 0
+	valves["visited"] = []
+	valves["open"] = []
+	valves["released"] = []
+
+
+	leaves = 0
+	max_released = 0
+	best_visited = []
+	best_open = []
+	best_released = []
+
+	# Start the Recursion
+	visitationPart1(30, "AA", 0)
+
+	print(leaves)
+	print(max_released)
+	print(len(best_visited))
+	print(best_visited)
+	print(best_open)
+	print(best_released)
+
 
 # Chapter Two
 if PART_TWO:
-	for m2 in range(MAX_Y):
-		slm2 = sorted(sparse_lines[m2], key=lambda x: x[0])
-		#print(slm2)
+	if MINI:
+		ref_sum = [0, 20, 20, 20, 20, 30, 30, 30, 30, 50, 50, 50, 50, 50, 50, 50, 50, 80, 80, 80, 80, 80, 80, 80, 80, 80]
+		ref_sum = [x-1 if x>0 else 0 for x in ref_sum ]
 
-		nslm2 = []
-		last_x = -10
-		for x1, x2 in slm2:
-			if x1 < 0:
-				x1 = 0
-			if x2 > MAX_X:
-				x2 = MAX_X
+	else: 
+		ref_sum = [0, 0, 0, 0, 0, 0, 10, 10, 10, 21, 21, 21, 40, 40, 40, 40, 60, 60, 60, 90, 90, 90, 90, 100, 100, 100, 120, 120, 120, 120, 140, 140, 140, 0]
 
-			if x1 > last_x+1:
-				nslm2.append( (x1, x2) )
-				last_x = x2
-			else:
-				if x2 > last_x:
-					last_x = x2
-				nslm2[-1] = (nslm2[-1][0], last_x)
+	valves["sum"] = 0
+	valves["visited"] = []
+	valves["open"] = []
+	valves["released"] = []
 
-		if len(nslm2) > 1:
-			print(m2, nslm2)
 
-	# 3403960*4000000+3289729
+	leaves = 0
+	max_released = 0
+	best_visited = []
+	best_open = []
+	best_released = []
+
+	# Start the Recursion
+	visitationPart2(26, 0, "AA", "AA", 0)
+
+	print(leaves)
+	print(max_released)
+	print(len(best_visited))
+	print(best_visited)
+	print(best_open)
+	print(best_released)
