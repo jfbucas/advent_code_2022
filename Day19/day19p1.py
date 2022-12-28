@@ -41,6 +41,7 @@ def dfs(bp, maxspend, cache, time, bots, amt):
     return maxval
 
 total = 0
+total_a = []
 
 for i, line in enumerate(open(0)):
     bp = []
@@ -55,7 +56,8 @@ for i, line in enumerate(open(0)):
         bp.append(recipe)
     recurs_count = 0
     v = dfs(bp, maxspend, {}, 24, [1, 0, 0, 0], [0, 0, 0, 0])
-    print(recurs_count)
+    total_a.append(v) #print(recurs_count)
     total += (i + 1) * v
 
 print(total)
+print(total_a)

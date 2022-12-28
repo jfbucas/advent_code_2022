@@ -13,12 +13,13 @@ PART_ONE = True
 #PART_TWO = True
 
 # cat factory.txt | tr -d "[a-zA-Z:.]" | tr -s " " > factory-tr.txt
-f = open("factory-tr2.txt", "r")
+f = open("factory-tr.txt", "r")
 MINI=False
-f = open("minifactory-tr.txt", "r")
-MINI=True
+#f = open("minifactory-tr.txt", "r")
+#MINI=True
 
 """Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian."""
+"""Blueprint 4: Each ore robot costs 4 ore. Each clay robot costs 3 ore. Each obsidian robot costs 2 ore and 19 clay. Each geode robot costs 3 ore and 10 obsidian."""
 
 blueprints = {}
 for line in f.readlines():
@@ -39,6 +40,8 @@ def build_n_collect(time, blueprint,  rob_ore, rob_clay, rob_obs, rob_geo,  res_
 	if key in cache:
 		return cache[key]
 
+	#print("        Time", time, "Blueprint", blueprint, "Robots", rob_ore, rob_clay, rob_obs, rob_geo, "Resources", res_ore, res_clay, res_obs, res_geo)
+
 	# Out of time
 	if time > 23:
 		if res_geo > global_best_geo:
@@ -51,7 +54,8 @@ def build_n_collect(time, blueprint,  rob_ore, rob_clay, rob_obs, rob_geo,  res_
 	if global_recurs_count > global_recurs_count_limit:
 		return 0
 	
-	# Heuristics
+	"""
+	# Heuristics on Robots
 	if (heuristic_rob_min[time][0] > rob_ore) or \
 		(heuristic_rob_min[time][1] > rob_clay) or \
 		(heuristic_rob_min[time][2] > rob_obs) or \
@@ -63,33 +67,68 @@ def build_n_collect(time, blueprint,  rob_ore, rob_clay, rob_obs, rob_geo,  res_
 		cache[key] = 0
 		return 0
 
+	# Heuristics on Resources
+	if (heuristic_res_min[time][0] > res_ore) or \
+		(heuristic_res_min[time][1] > res_clay) or \
+		(heuristic_res_min[time][2] > res_obs) or \
+		(heuristic_res_min[time][3] > res_geo) or \
+		(heuristic_res_max[time][0] < res_ore) or \
+		(heuristic_res_max[time][1] < res_clay) or \
+		(heuristic_res_max[time][2] < res_obs) or \
+		(heuristic_res_max[time][3] < res_geo):
+		cache[key] = 0
+		return 0
+	"""
 
 	possibilities = []
 
-	# If we don't build a robot, only collect resources
-	possibilities.append( (0,0,0,0, 0,0,0,0) )
+
+	# Time before the next robot can be built
+	time_before_new_rob_ore = 25
+	time_before_new_rob_clay = 25
+	time_before_new_rob_obs = 25
+	time_before_new_rob_geo = 25
 
 	# Build a rob_ore
 	if res_ore >= blueprints[blueprint][0]:
-		possibilities.append( (1,0,0,0, blueprints[blueprint][0],0,0,0) )
+		possibilities.append( (1, 1,0,0,0, blueprints[blueprint][0],0,0,0) )
+	else:
+		time_before_new_rob_ore = blueprints[blueprint][0] - res_ore
 
 	# Build a rob_clay
 	if res_ore >= blueprints[blueprint][1]:
-		possibilities.append( (0,1,0,0, blueprints[blueprint][1],0,0,0) )
+		possibilities.append( (1, 0,1,0,0, blueprints[blueprint][1],0,0,0) )
+	else:
+		time_before_new_rob_clary = blueprints[blueprint][1] - res_ore
+
 
 	# Build a rob_obs
 	if (res_ore >= blueprints[blueprint][2]) and (res_clay >= blueprints[blueprint][3]):
-		possibilities.append( (0,0,1,0, blueprints[blueprint][2],blueprints[blueprint][3],0,0) )
+		possibilities.append( (1, 0,0,1,0, blueprints[blueprint][2],blueprints[blueprint][3],0,0) )
+	else:
+		time_before_new_rob_obs = max(blueprints[blueprint][2] - res_ore, blueprints[blueprint][3] - res_clay)
+
 		
 	# Build a rob_geo
 	if (res_ore >= blueprints[blueprint][4]) and (res_obs >= blueprints[blueprint][5]):
-		possibilities.append( (0,0,0,1, blueprints[blueprint][4],0,blueprints[blueprint][5],0) )
+		possibilities.append( (1, 0,0,0,1, blueprints[blueprint][4],0,blueprints[blueprint][5],0) )
+	else:
+		time_before_new_rob_geo = max(blueprints[blueprint][4] - res_ore, blueprints[blueprint][5] - res_obs)
 	
+
+	# If we don't build a robot, only collect resources while we skip to the next possible robot
+	if len(possibilities) == 0:
+		time_to_wait = min(time_before_new_rob_ore, time_before_new_rob_clay, time_before_new_rob_obs, time_before_new_rob_geo)
+		if time+time_to_wait >= 23:
+			time_to_wait = 1
+		possibilities.append( (time_to_wait, 0,0,0,0, 0,0,0,0) )
+		
+	#print(possibilities)
 
 	# Collect resources
 	best_geo = 0
-	for new_rob_ore, new_rob_clay, new_rob_obs, new_rob_geo, used_res_ore, used_res_clay, used_res_obs, used_res_geo in possibilities:
-		tmp_geo = build_n_collect(time+1, blueprint, rob_ore+new_rob_ore, rob_clay+new_rob_clay, rob_obs+new_rob_obs, rob_geo+new_rob_geo,  res_ore+rob_ore-used_res_ore, res_clay+rob_clay-used_res_clay, res_obs+rob_obs-used_res_obs, res_geo+rob_geo-used_res_geo)
+	for time_to_wait, new_rob_ore, new_rob_clay, new_rob_obs, new_rob_geo, used_res_ore, used_res_clay, used_res_obs, used_res_geo in possibilities:
+		tmp_geo = build_n_collect(time+time_to_wait, blueprint, rob_ore+new_rob_ore, rob_clay+new_rob_clay, rob_obs+new_rob_obs, rob_geo+new_rob_geo,  res_ore+rob_ore*time_to_wait-used_res_ore, res_clay+rob_clay*time_to_wait-used_res_clay, res_obs+rob_obs*time_to_wait-used_res_obs, res_geo+rob_geo*time_to_wait-used_res_geo)
 		if tmp_geo > best_geo:
 			best_geo = tmp_geo
 	
@@ -97,7 +136,7 @@ def build_n_collect(time, blueprint,  rob_ore, rob_clay, rob_obs, rob_geo,  res_
 	global_recurs_count += 1
 	recurs_count_time[ time ] += 1
 	#if global_recurs_count % 750000 == 0:
-	#	print("        Time", time, "Blueprint", blueprint, "Robots", rob_ore, rob_clay, rob_obs, rob_geo, "Resources", res_ore, res_clay, res_obs, res_geo, "Best", best_geo, "Recurs", recurs_count_time)
+	#print("        Time", time, "Blueprint", blueprint, "Robots", rob_ore, rob_clay, rob_obs, rob_geo, "Resources", res_ore, res_clay, res_obs, res_geo, "Best", best_geo, "Recurs", recurs_count_time)
 
 	cache[key] = best_geo
 	return best_geo
@@ -126,6 +165,25 @@ if PART_ONE:
 
 #Blueprint 1: Each ore robot costs 3 ore. Each clay robot costs 3 ore. Each obsidian robot costs 2 ore and 20 clay. Each geode robot costs 2 ore and 20 obsidian.
 #Blueprint 2: Each ore robot costs 4 ore. Each clay robot costs 4 ore. Each obsidian robot costs 4 ore and 9 clay. Each geode robot costs 3 ore and 9 obsidian.
+		heuristic_res_min = [
+			[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+			[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+			[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+			[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+			[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+			[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+			[0, 0, 0, 0]
+			]
+
+		heuristic_res_max = [
+			[70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70],
+			[70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70],
+			[70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70],
+			[70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70],
+			[70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70],
+			[70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70], [70, 70, 70, 70],
+			[70, 70, 70, 70]
+			]
 
 		for heuristic_rob_max_ore, \
 			heuristic_rob_max_clay, \
@@ -191,9 +249,9 @@ if PART_ONE:
 			print("|||")
 			print("=====================================================")
 
-		quality_levels.append( global_best_geo * b )
+		quality_levels.append( global_best_geo )
 	
-	print("Sum of quality levels", sum(quality_levels), "   (", quality_levels, ")")
+	print("Sum of quality levels", sum([x*(i+1) for i,x in zip(range(len(quality_levels)),quality_levels) ]), "   (", quality_levels, ")")
 
 # Chapter Two
 if PART_TWO:
