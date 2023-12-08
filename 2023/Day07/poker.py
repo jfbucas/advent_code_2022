@@ -20,200 +20,94 @@ HAND_TUPLES = {
 
 
 
-def is_hand_paire1(h):
+def is_hand_paire(h):
 	for a,b in HAND_TUPLES["paire"]:
 		if h[a] == h[b]:
-			return { "typerank1":1, "type":"paire", "cards":(a,b) }
+			return { "typerank":1, "type":"paire", "cards":(a,b) }
 	
 	return None
 
-def is_hand_double1(h):
+def is_hand_double(h):
 	for a,b, d,e in HAND_TUPLES["double"]:
 		if h[a] == h[b] and h[d] == h[e]:
-			return { "typerank1":2, "type":"double", "cards":(a,b, d,e) }
+			return { "typerank":2, "type":"double", "cards":(a,b, d,e) }
 	
 	return None
 
-def is_hand_brelan1(h):
+def is_hand_brelan(h):
 	for a,b,c in HAND_TUPLES["brelan"]:
 		if h[a] == h[b] == h[c]:
-			return { "typerank1":3, "type":"brelan", "cards":(a,b,c) }
+			return { "typerank":3, "type":"brelan", "cards":(a,b,c) }
 	
 	return None
 
-def is_hand_full1(h):
+def is_hand_full(h):
 	for a,b,c,d,e in HAND_TUPLES["full"]:
 		if h[a] == h[b] == h[c] and h[d] == h[e]:
-			return { "typerank1":4, "type":"full", "cards":(a,b,c, d,e) }
+			return { "typerank":4, "type":"full", "cards":(a,b,c, d,e) }
 	
 	return None
 
-def is_hand_carre1(h):
+def is_hand_carre(h):
 	for a,b,c,d in HAND_TUPLES["carre"]:
 		if h[a] == h[b] == h[c] == h[d]:
-			return { "typerank1":5, "type":"carre", "cards":(a,b,c,d) }
+			return { "typerank":5, "type":"carre", "cards":(a,b,c,d) }
 	
 	return None
 
-def is_hand_five1(h):
+def is_hand_five(h):
 	if h[0] == h[1] == h[2] == h[3] == h[4]:
-		return { "typerank1":6, "type":"five", "cards":(h[0], h[1], h[2], h[3], h[4]) }
+		return { "typerank":6, "type":"five", "cards":(h[0], h[1], h[2], h[3], h[4]) }
 	
 	return None
 
 
-def get_hand_type1(h):
+def get_hand_type(h):
 
-	c5 = is_hand_five1(h)
+	c5 = is_hand_five(h)
 	if c5 != None:
 		return c5
 
-	cc = is_hand_carre1(h)
+	cc = is_hand_carre(h)
 	if cc != None:
 		return cc
 
-	cf = is_hand_full1(h)
+	cf = is_hand_full(h)
 	if cf != None:
 		return cf
 
-	cb = is_hand_brelan1(h)
+	cb = is_hand_brelan(h)
 	if cb != None:
 		return cb
 
-	cd = is_hand_double1(h)
+	cd = is_hand_double(h)
 	if cd != None:
 		return cd
 
-	cp = is_hand_paire1(h)
+	cp = is_hand_paire(h)
 	if cp != None:
 		return cp
 
-	ch = { "typerank1":0, "type": "high", "cards":None }
+	ch = { "typerank":0, "type": "high", "cards":None }
 	return ch
 
-
-def is_hand_paire2(h):
-	for a,b in HAND_TUPLES["paire"]:
-		t = h
-		if t[a] == "J":
-			t[a] = t[b]
-		if t[b] == "J":
-			t[b] = t[a]
-
-		if t[a] == t[b]:
-			return { "typerank2":1, "type":"paire", "cards":(a,b) }
+def get_hand_type2(h):
+	best_type = get_hand_type(h)
+	if "J" in h:
+		for c in CARDS_RANK2[1:]:
+			t = h.replace("J", c, 1)
+			new_type = get_hand_type2(t)
+			if new_type["typerank"] > best_type["typerank"]:
+				best_type = new_type
 	
-	return None
-
-def is_hand_double2(h):
-	for a,b, d,e in HAND_TUPLES["double"]:
-		t = h
-		if t[a] == "J":
-			t[a] = t[b]
-		if t[b] == "J":
-			t[b] = t[a]
-		if t[d] == "J":
-			t[d] = t[e]
-		if t[e] == "J":
-			t[e] = t[d]
-		if t[a] == t[b] and t[d] == t[e]:
-			return { "typerank2":2, "type":"double", "cards":(a,b, d,e) }
-	
-	return None
-
-def is_hand_brelan2(h):
-	for a,b,c in HAND_TUPLES["brelan"]:
-		t = h
-		if t[a] == "J":
-			if t[b] == "J":
-				t[a] = t[c]
-			else:
-				t[a] = t[b]
-		if t[b] == "J":
-			t[b] = t[c]
-		if t[c] == "J":
-			t[c] = t[a]
-		if t[a] == t[b] == t[c]:
-			return { "typerank2":3, "type":"brelan", "cards":(a,b,c) }
-	
-	return None
-
-def is_hand_full2(h):
-	for a,b,c,d,e in HAND_TUPLES["full"]:
-		t = h
-		if t[a] == "J":
-			if t[b] == "J":
-				t[a] = t[c]
-			else:
-				t[a] = t[b]
-		if t[b] == "J":
-			t[b] = t[c]
-		if t[c] == "J":
-			t[c] = t[a]
-		if t[d] == "J":
-			t[d] = t[e]
-		if t[e] == "J":
-			t[e] = t[d]
-		if t[a] == t[b] == t[c] and t[d] == t[e]:
-			return { "typerank2":4, "type":"full", "cards":(a,b,c, d,e) }
-	
-	return None
-
-def is_hand_carre2(h):
-	for a,b,c,d in HAND_TUPLES["carre"]:
-		if h[a] == h[b] == h[c] == h[d]:
-			return { "typerank2":5, "type":"carre", "cards":(a,b,c,d) }
-	
-	return None
-
-def is_hand_five2(h):
-	if h[0] == h[1] == h[2] == h[3] == h[4]:
-		return { "typerank2":6, "type":"five", "cards":(h[0], h[1], h[2], h[3], h[4]) }
-	
-	return None
+	return best_type
 
 
-def get_hand_type1(h):
-
-	c5 = is_hand_five1(h)
-	if c5 != None:
-		return c5
-
-	cc = is_hand_carre1(h)
-	if cc != None:
-		return cc
-
-	cf = is_hand_full1(h)
-	if cf != None:
-		return cf
-
-	cb = is_hand_brelan1(h)
-	if cb != None:
-		return cb
-
-	cd = is_hand_double1(h)
-	if cd != None:
-		return cd
-
-	cp = is_hand_paire1(h)
-	if cp != None:
-		return cp
-
-	ch = { "typerank1":0, "type": "high", "cards":None }
-	return ch
-def hand_rank1(h):
+def hand_rank(h, card_rank):
 	r=1
 	rank=0
 	for c in reversed(h):
-		rank += r * CARDS_RANK1.index(c)
-		r *= 16
-	return rank 
-
-def hand_rank2(h):
-	r=1
-	rank=0
-	for c in reversed(h):
-		rank += r * CARDS_RANK2.index(c)
+		rank += r * card_rank.index(c)
 		r *= 16
 	return rank 
 
@@ -223,12 +117,13 @@ for line in f.readlines():
 	hands.append( { "cards":line[0], "bid":int(line[1]) } )
 
 for h in hands:
-	h["type1"] = get_hand_type1(h["cards"])
+	h["type1"] = get_hand_type(h["cards"])
 	h["type2"] = get_hand_type2(h["cards"])
-	h["cardrank1"] = hand_rank1(h["cards"])
-	h["cardrank2"] = hand_rank2(h["cards"])
-	h["totalrank1"] = h["type1"]["typerank1"]*(2**22) + h["cardrank1"]
-	h["totalrank2"] = h["type2"]["typerank2"]*(2**22) + h["cardrank2"]
+
+	h["cardrank1"] = hand_rank(h["cards"], CARDS_RANK1)
+	h["cardrank2"] = hand_rank(h["cards"], CARDS_RANK2)
+	h["totalrank1"] = h["type1"]["typerank"]*(2**22) + h["cardrank1"]
+	h["totalrank2"] = h["type2"]["typerank"]*(2**22) + h["cardrank2"]
 
 hands1 = sorted(hands, key=lambda h: h['totalrank1'])
 
@@ -247,25 +142,3 @@ for h, p in zip(hands2,range(1,len(hands2)+1)):
 
 print(total_bids2)
 
-
-exit()
-
-time=list(map(int, re.split(r'\s{2,}', lines[0].strip())[1:]))
-dist=list(map(int, re.split(r'\s{2,}', lines[1].strip())[1:]))
-
-records=[]
-for race in range(len(time)):
-	winners=[]
-
-	for button_time in range(time[race]):
-		d = button_time * (time[race]-button_time)
-		if d > dist[race]:
-			winners.append(button_time)
-	records.append(len(winners))
-
-answer=1
-for r in records:
-	answer*=r
-
-print(answer)
-			
