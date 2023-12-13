@@ -104,11 +104,6 @@ print(len(total))
 
 # Part 2
 
-unfolded_springs = []
-for s in springs:
-	#unfolded_springs.append({"desc":"?".join([s["desc"]]*5), "faulties":s["faulties"]*5})
-	unfolded_springs.append({"desc":s["desc"]+"?", "faulties":s["faulties"]})
-
 total = 0
 for s in springs:
 	a = s["desc"]
@@ -141,7 +136,7 @@ for s in springs:
 				best_count = comb_count
 				print(comb_count)
 
-	total+=best_count
+	total += best_count
 	print(a, best_count)
 
 print(total)
