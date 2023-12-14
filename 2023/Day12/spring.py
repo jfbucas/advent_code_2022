@@ -111,27 +111,22 @@ for s in springs:
 	c = "?"+s["desc"]+"?"
 	d = "?"+s["desc"]
 
-	sa = { "desc":a, "faulties":s["faulties"] }
-	sb = { "desc":b, "faulties":s["faulties"] }
-	sc = { "desc":c, "faulties":s["faulties"] }
-	sd = { "desc":d, "faulties":s["faulties"] }
-
-	va = get_variations(sa)
-	vb = get_variations(sb)
-	vc = get_variations(sc)
-	vd = get_variations(sd)
-
-	ca = len(va[a])
-	cb = len(vb[b])
-	cc = len(vc[c])
-	cd = len(vd[d])
+	for l in "abcd":
+		exec('s'+l+' = { "desc":'+l+', "faulties":s["faulties"] }')
+		exec('v'+l+' = get_variations(s'+l+')')
+		exec('c'+l+' = len(v'+l+'['+l+'])')
+		exec('c'+l+'ds = len([x for x in v'+l+'['+l+'] if x.startswith(".")])')
+		exec('c'+l+'hs = len([x for x in v'+l+'['+l+'] if x.startswith("#")])')
+		exec('c'+l+'de = len([x for x in v'+l+'['+l+'] if x.endswith(".")])')
+		exec('c'+l+'he = len([x for x in v'+l+'['+l+'] if x.endswith("#")])')
 
 	best_count = 0
 	unfolded_str = "?".join([s["desc"]]*5)
 	for comb in itertools.product('abcd', repeat=5):
-		exec("comb_str = "+comb[0]+"+"+comb[1]+"+"+comb[2]+"+"+comb[3]+"+"+comb[4])
+		(c0, c1, c2, c3, c4) = comb
+		exec("comb_str = "+c0+"+"+c1+"+"+c2+"+"+c3+"+"+c4)
 		if comb_str == unfolded_str:
-			exec("comb_count = c"+comb[0]+"*c"+comb[1]+"*c"+comb[2]+"*c"+comb[3]+"*c"+comb[4])
+			exec("comb_count = c"+c0+"*c"+c1+"*c"+c2+"*c"+c3+"*c"+c4+" - (c"+c0+"he*c"+c1+"hs + c"+c1+"he*c"+c2+"hs + c"+c2+"he*c"+c3+"hs + c"+c3+"he*c"+c4+"hs)")
 			if best_count < comb_count:
 				best_count = comb_count
 				print(comb_count)
